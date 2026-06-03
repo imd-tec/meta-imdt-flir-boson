@@ -1,0 +1,13 @@
+[Unit]
+Description=Media pipeline setup for supported cameras
+After=systemd-udevd.service
+Wants=systemd-udevd.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/camera-setup.sh ap1302 /dev/video0
+ExecStart=/usr/bin/camera-setup.sh boson /dev/video1
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target

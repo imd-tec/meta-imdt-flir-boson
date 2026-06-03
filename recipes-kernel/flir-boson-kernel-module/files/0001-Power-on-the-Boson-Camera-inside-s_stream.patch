@@ -1,0 +1,30 @@
+From e64acac7a7db4c9f37a510b97d6b5a725253b947 Mon Sep 17 00:00:00 2001
+From: Russell Bateman <russell.bateman@imd-tec.com>
+Date: Wed, 27 May 2026 14:12:57 +0100
+Subject: [PATCH] Power on the Boson Camera inside the s_stream function
+
+---
+ flir_boson_v4l2/flir-boson-core.c | 10 ++++++++++
+ 1 file changed, 10 insertions(+)
+
+diff --git a/flir_boson_v4l2/flir-boson-core.c b/flir_boson_v4l2/flir-boson-core.c
+index 0173f3d..bc3363d 100644
+--- a/flir_boson_v4l2/flir-boson-core.c
++++ b/flir_boson_v4l2/flir-boson-core.c
+@@ -258,6 +258,16 @@ unlock:
+ /* V4L2 Subdev Video Operations */
+ static int flir_boson_s_stream(struct v4l2_subdev *sd, int enable) {
+     struct flir_boson_dev *sensor = to_flir_boson_dev(sd);
++    const char* power_status = (enable) ? "on" : "off";
++
++    if((enable && !sensor->powered) || (!enable && sensor->powered)) {
++        dev_info(sensor->dev, "STREAM: Powering %s camera...\n", power_status);
++
++        if (flir_boson_s_power(sd, enable) != 0) {
++            dev_err(sensor->dev, "STREAM: Failed to power %s the camera\n", power_status);
++        }
++    }
++
+     return flir_boson_s_stream_priv(sensor, enable);
+ }
+ 

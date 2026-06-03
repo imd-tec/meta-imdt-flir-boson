@@ -1,0 +1,60 @@
+From 95c338bba899a39173e81370644aa7ad054c5cb6 Mon Sep 17 00:00:00 2001
+From: Russell Bateman <russell.bateman@imd-tec.com>
+Date: Thu, 28 May 2026 12:31:39 +0100
+Subject: [PATCH 2/2] Move the HR_CAM_EN GPIO into its own power regulator
+ node.
+
+This is instead of the AP1302 driver taking ownership of this pin and
+de-asserting it if the driver fails to probe. This is useful in
+multi-camera systems, in circumstances where the AP1302 may not have a
+sensor attached.
+---
+ .../boot/dts/freescale/imx8mp-imdt-pico.dtsi   | 18 ++++++++++++++++--
+ 1 file changed, 16 insertions(+), 2 deletions(-)
+
+diff --git a/arch/arm64/boot/dts/freescale/imx8mp-imdt-pico.dtsi b/arch/arm64/boot/dts/freescale/imx8mp-imdt-pico.dtsi
+index d2ce05b818cd..ddc6b62325e8 100755
+--- a/arch/arm64/boot/dts/freescale/imx8mp-imdt-pico.dtsi
++++ b/arch/arm64/boot/dts/freescale/imx8mp-imdt-pico.dtsi
+@@ -112,6 +112,16 @@ sound-micfil {
+ 		model = "imx-audio-micfil";
+ 		cpu-dai = <&micfil>;
+ 	};
++
++	reg_cam_pwr: regulator-cam-pwr {
++        compatible = "regulator-fixed";
++        regulator-name = "HR_CAM_EN";
++        regulator-min-microvolt = <3300000>;
++        regulator-max-microvolt = <3300000>;
++        gpio = <&gpio2 12 GPIO_ACTIVE_HIGH>;
++        enable-active-high;
++        regulator-always-on;
++    };
+ };
+ 
+ &A53_0 {
+@@ -372,7 +382,7 @@ camera@3c {
+ 		reg = <0x3c>;
+ 
+ 		pinctrl-names = "default";
+-		pinctrl-0 = <&pinctrl_csi0_pwn>, <&pinctrl_csi0_stby>, <&pinctrl_csi0_rst>, <&pinctrl_csi_mclk>;
++		pinctrl-0 = <&pinctrl_csi0_stby>, <&pinctrl_csi0_rst>, <&pinctrl_csi_mclk>;
+ 
+ 		clocks = <&clk IMX8MP_CLK_IPP_DO_CLKO2>;
+ 		clock-names = "csi_mclk";
+@@ -382,7 +392,11 @@ camera@3c {
+ 
+ 		reset-gpios = <&gpio1 21 GPIO_ACTIVE_LOW>;
+ 		standby-gpios = <&gpio1 20 GPIO_ACTIVE_HIGH>;
+-		power-gpios = <&gpio2 12 GPIO_ACTIVE_HIGH>;
++
++		// Use a regulator to decouple the ap1302 from direct control over the HR_CAM_EN GPIO
++		AVDD-supply = <&reg_cam_pwr>;
++        DVDD-supply = <&reg_cam_pwr>;
++        VDDIO-supply = <&reg_cam_pwr>;
+ 
+ 		port {
+ 			isp1_out: endpoint {
+-- 
+2.43.0
+

@@ -1,0 +1,7 @@
+header:
+  version: 15
+  includes:
+    - imdt-flir-boson.yml
+
+target:
+  - imdt-image-multimedia

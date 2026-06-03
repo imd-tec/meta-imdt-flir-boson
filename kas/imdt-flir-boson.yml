@@ -1,0 +1,24 @@
+header:
+  version: 15
+  includes:
+    - repo: imdt-pico-kas
+      file: includes/base.yml
+    - repo: imdt-pico-kas
+      file: includes/imdt.yml
+    - repo: imdt-pico-kas
+      file: machines/imdt-pico.yml
+    - repo: imdt-pico-kas
+      file: includes/hailo.yml
+    - repo: imdt-pico-kas
+      file: includes/nxp-demo-exp.yml
+    - repo: imdt-pico-kas
+      file: images/core.yml
+    - repo: imdt-pico-kas
+      file: images/multimedia.yml
+
+repos:
+  imdt-pico-kas:
+    url: https://github.com/imd-tec/imdt-pico-kas.git
+    branch: scarthgap
+    layers: {}
+  meta-flir-boson:
