@@ -21,4 +21,4 @@ repos:
     url: https://github.com/imd-tec/imdt-pico-kas.git
     branch: scarthgap
     layers: {}
-  meta-flir-boson:
+  meta-imdt-flir-boson:

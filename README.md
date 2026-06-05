@@ -260,7 +260,5 @@ programatically on boot. We are still working for a more robust fix here.
 
 ## Known Issues
 
-- Currently there is no .yml file for the Kas build, so the user will have to append the meta-layer to their bblayers.conf
-  whenever starting a new container instance.
 - There is a startup issue with the AP1302 driver when the Boson driver is introduced on the same I2C node.
   Performing I2C reads/writes can be unreliable on startup, if one fails then the driver must manually be reloaded.
