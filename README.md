@@ -16,6 +16,13 @@ Note: Currently tested on the following platforms:
 
 ### Build a Flir Boson compatible image
 
+If you are starting from scratch, please follow the "Building the Yocto Image" section in the 
+Getting Started Guide for your IMDT platform:
+
+Pico-EM: [IMDT Pico - Getting Started Guide.pdf](https://drive.google.com/file/d/1_8spmvY4PkHqKvsojBL_bl1Poif28Mbh/view?usp=drive_link)
+
+Once you have a build complete, perform these steps:
+
 1. Clone this repository into your sources/ directory:
 ```bash
 $ cd <imdt-bsp-dir>/sources
@@ -37,9 +44,12 @@ or
 $ kas-container build sources/meta-imdt-flir-boson/kas/imdt-flir-boson-multimedia.yml
 ```
 
+Calling kas-container on the imdt-flir-boson yml files will regenerate your BBLAYERS file,
+this will automatically add the flir-boson components to imdt-image-core/multimedia.
+
 3. Deploy the image onto the device as usual (SD Card flash/UUU/SWUpdate)
 
-4. Boot the device with the AP1302 and Boson camera connected
+4. Boot the device with the AP1302 (with selected sensor e.g. AR0522, AR1335) on CSI0, and the Boson camera connected on CSI1.
 
 5. Try a capture from the Flir-Boson by executing the following on the device:
 ```bash
@@ -88,6 +98,33 @@ The available "lut-ids" are:
 - hottest
 - emberglow
 - aurora
+
+### Camera Setup Service
+
+To configure the media pipeline for the AP1302 and Flir Boson, a systemd service "camera-setup.service" is started on boot.
+This will configure the resolution/format for each camera. Currently this configures the AP1302 in 5MP mode (2592x1944) YUYV8, the Flir Boson in 640x512 YUYV8.
+
+The source for this service is available in recipes-apps/camera-setup/files.
+
+### Camera Output Modes
+
+The following video output modes for the Flir Boson have been tested:
+
+Single MIPI:
+
+| MIPI TYPE                       | DVO TYPE | Tested    |
+| ------------------------------- | -------- | --------- |
+| RAW8 (postAGC monochrome video) | MONO8    | ❌         |
+| UYVY (postAGC color video)      | COLOR    | **✅**    |
+| RAW14 (NUC output)              | MONO14   | ❌         |
+
+Dual MIPI:
+
+| MIPI TYPE [VC0 / VC1] ( Note: RAW8 is postAGC )  | DVO TYPE    | Tested    |
+| ------------------------------------------------ | ----------- | --------- |
+| RAW8 / RAW14                                     | MONO8MONO14 | ❌         |
+| UYVY / RAW14                                     | COLORMONO14 | ❌         |
+| UYVY / RAW8                                      | COLORMONO8  | ❌         |
 
 ### Troubleshooting
 Run the following command on the device to confirm that the media pipeline has been brought up:
@@ -262,3 +299,20 @@ programatically on boot. We are still working for a more robust fix here.
 
 - There is a startup issue with the AP1302 driver when the Boson driver is introduced on the same I2C node.
   Performing I2C reads/writes can be unreliable on startup, if one fails then the driver must manually be reloaded.
+
+- In order to bring the media pipeline up, there must be a compatible camera sensor (either ar1335 or ar0521/2) attached to the AP1302 on CSI0. If there is no camera attached, then streaming/configuration of the Boson is not possible.
+
+- Currently you cannot stream from both the AP1302 and Flir Boson simultaneously, with the AP1302 running at a 5MP resolution (2592x1944).
+When running a GStreamer pipeline that uses both video devices, you may see the following error:
+```bash
+ERROR: from element /GstPipeline:pipeline0/GstV4l2Src:v4l2src0: Failed to allocate required memory.
+Additional debug info:
+/usr/src/debug/gstreamer1.0-plugins-good/1.24.7.imx/sys/v4l2/gstv4l2src.c(956): gst_v4l2src_decide_allocation (): /GstPipeline:pipeline0/GstV4l2Src:v4l2src0:
+Buffer pool activation failed
+ERROR: from element /GstPipeline:pipeline0/GstV4l2Src:v4l2src0: Internal data stream error.
+Additional debug info:
+/usr/src/debug/gstreamer1.0/1.24.7.imx/libs/gst/base/gstbasesrc.c(3177): gst_base_src_loop (): /GstPipeline:pipeline0/GstV4l2Src:v4l2src0:
+streaming stopped, reason not-negotiated (-4)
+Execution ended after 0:00:00.020484000
+Setting pipeline to NULL ...
+```
