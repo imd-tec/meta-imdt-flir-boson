@@ -106,6 +106,16 @@ This will configure the resolution/format for each camera. Currently this config
 
 The source for this service is available in recipes-apps/camera-setup/files.
 
+### Camera test scripts
+
+- flir-boson-fps-test.sh - Get a readout of the maximum framerate from the Flir Boson's video stream.
+- flir-boson-mp4.sh - Record the output of the Flir Boson to an MP4 file.
+- flir-boson-snapshot.sh - Capture a frame from the Flir Boson and save it as a JPEG.
+- flir-boson-simultaneous-raw-recording.sh - Capture two raw feeds simultaneously from the Flir Boson and the AP1302 
+  - Note: It is advised to create a separate partition for storing these captures as they are large. Saving them to the default
+          tmpfs location will only allow for around 5 seconds of capture per sensor before running out of space.
+- flir-get-info - A script that utilises the Flir Boson Python SDK to print manufacturing information about the camera.
+
 ### Camera Output Modes
 
 The following video output modes for the Flir Boson have been tested:
@@ -302,17 +312,5 @@ programatically on boot. We are still working for a more robust fix here.
 
 - In order to bring the media pipeline up, there must be a compatible camera sensor (either ar1335 or ar0521/2) attached to the AP1302 on CSI0. If there is no camera attached, then streaming/configuration of the Boson is not possible.
 
-- Currently you cannot stream from both the AP1302 and Flir Boson simultaneously, with the AP1302 running at a 5MP resolution (2592x1944).
-When running a GStreamer pipeline that uses both video devices, you may see the following error:
-```bash
-ERROR: from element /GstPipeline:pipeline0/GstV4l2Src:v4l2src0: Failed to allocate required memory.
-Additional debug info:
-/usr/src/debug/gstreamer1.0-plugins-good/1.24.7.imx/sys/v4l2/gstv4l2src.c(956): gst_v4l2src_decide_allocation (): /GstPipeline:pipeline0/GstV4l2Src:v4l2src0:
-Buffer pool activation failed
-ERROR: from element /GstPipeline:pipeline0/GstV4l2Src:v4l2src0: Internal data stream error.
-Additional debug info:
-/usr/src/debug/gstreamer1.0/1.24.7.imx/libs/gst/base/gstbasesrc.c(3177): gst_base_src_loop (): /GstPipeline:pipeline0/GstV4l2Src:v4l2src0:
-streaming stopped, reason not-negotiated (-4)
-Execution ended after 0:00:00.020484000
-Setting pipeline to NULL ...
-```
+- Currently you cannot stream from the AP1302 at 5MP over 30FPS. This appears to be an issue in the AP1302 driver, which will be
+investigated in a later release.

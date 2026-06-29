@@ -7,6 +7,7 @@ inherit systemd
 
 SRC_URI = " \
     file://camera-setup.sh \
+    file://get-camera-setup.sh \
     file://camera-setup.service \
     file://flir-boson-deps.conf \
 "
@@ -19,6 +20,7 @@ RDEPENDS:${PN} = "v4l-utils media-ctl"
 do_install() {
     install -d ${D}${bindir}
     install -m 0755 ${WORKDIR}/camera-setup.sh ${D}${bindir}/camera-setup.sh
+    install -m 0755 ${WORKDIR}/get-camera-setup.sh ${D}${bindir}/get-camera-setup.sh
 
     install -d ${D}${systemd_system_unitdir}
     install -m 0644 ${WORKDIR}/camera-setup.service ${D}${systemd_system_unitdir}/camera-setup.service
@@ -29,6 +31,7 @@ do_install() {
 
 FILES:${PN} = " \
     ${bindir}/camera-setup.sh \
+    ${bindir}/get-camera-setup.sh \
     ${systemd_system_unitdir}/camera-setup.service \
     ${sysconfdir}/modprobe.d/flir-boson-deps.conf \
 "
