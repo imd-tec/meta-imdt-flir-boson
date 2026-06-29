@@ -1,0 +1,12 @@
+prefix=/usr
+exec_prefix=${prefix}
+libdir=${exec_prefix}/lib
+includedir=${prefix}/include
+
+Name: libBosonSDK
+Description: FLIR Boson C SDK for thermal imager over MIPI/I2C
+Version: 4.1
+Requires: libFSLP
+Libs: -L${libdir} -lBosonSDK
+Libs.private: -lFSLP
+Cflags: -I${includedir}/boson -DUSE_I2C_SLAVE_CP

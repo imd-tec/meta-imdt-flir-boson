@@ -1,0 +1,34 @@
+WARNINGS =
+CFLAGS += -I./src/inc
+OBJDIR = obj
+
+COMMON_OBJBASE = flirCRC FSLP flirChannels timeoutLogic
+COMMON_DEPS = $(patsubst %,src/inc/%,FSLP.h flirCRC.h flirChannels.h serialPortAdapter.h timeoutLogic.h)
+
+ALLDEPS = $(COMMON_DEPS) | $(OBJDIR)
+ALLOBJ = $(patsubst %,$(OBJDIR)/%_64.o,$(COMMON_OBJBASE)) \
+         $(OBJDIR)/serialPort_Linux64.o \
+         $(OBJDIR)/serialPortAdapter_Linux64.o
+
+all: FSLP_64.so
+
+$(OBJDIR):
+	mkdir -p $(OBJDIR)
+
+$(ALLOBJ): | $(OBJDIR)
+
+$(OBJDIR)/%_64.o: src/%.c $(COMMON_DEPS)
+	$(CC) -fPIC $(WARNINGS) -c -o $@ $< $(CFLAGS)
+
+$(OBJDIR)/serialPort_Linux64.o: src/linux/serial.c $(COMMON_DEPS)
+	$(CC) -fPIC $(WARNINGS) -c -o $@ $< $(CFLAGS)
+
+$(OBJDIR)/serialPortAdapter_Linux64.o: src/linux/serialPortAdapter.c $(COMMON_DEPS)
+	$(CC) -fPIC $(WARNINGS) -c -o $@ $< $(CFLAGS)
+
+FSLP_64.so: $(ALLOBJ)
+	$(CC) $(WARNINGS) -shared $(LDFLAGS) -Wl,-soname,libFSLP.so.4 -o $@ $^
+
+.PHONY: clean
+clean:
+	rm -f $(OBJDIR)/*.o FSLP_64.so

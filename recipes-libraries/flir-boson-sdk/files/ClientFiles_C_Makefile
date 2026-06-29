@@ -1,0 +1,29 @@
+WARNINGS =
+CFLAGS += -I.
+OBJDIR = obj
+
+SRCS = Client_API Client_Dispatcher Client_Interface \
+       Client_Packager Serializer_BuiltIn Serializer_Struct \
+       UART_Connector I2C_Connector I2C_Platform
+
+OBJ = $(patsubst %,$(OBJDIR)/%_Linux64.o,$(SRCS))
+
+all: C_SDK_64.so Example_64.a
+
+$(OBJDIR):
+	mkdir -p $(OBJDIR)
+
+$(OBJ): | $(OBJDIR)
+
+$(OBJDIR)/%_Linux64.o: %.c Makefile
+	$(CC) -fPIC $(WARNINGS) -c -o $@ $< $(CFLAGS)
+
+C_SDK_64.so: $(OBJ) FSLP_64.so
+	$(CC) $(WARNINGS) -shared $(LDFLAGS) -Wl,-soname,libBosonSDK.so.4 -o $@ $(OBJ) FSLP_64.so
+
+Example_64.a: Example.c C_SDK_64.so FSLP_64.so
+	$(CC) $(WARNINGS) -Wl,-rpath=. $(LDFLAGS) $^ $(CFLAGS) -o $@
+
+.PHONY: clean
+clean:
+	rm -f $(OBJDIR)/*.o C_SDK_64.so Example_64.a

@@ -1,0 +1,10 @@
+prefix=/usr
+exec_prefix=${prefix}
+libdir=${exec_prefix}/lib
+includedir=${prefix}/include
+
+Name: libFSLP
+Description: FLIR Serial Link Protocol library for Boson thermal imager
+Version: 4.1
+Libs: -L${libdir} -lFSLP
+Cflags: -I${includedir}/boson -DUSE_I2C_SLAVE_CP
