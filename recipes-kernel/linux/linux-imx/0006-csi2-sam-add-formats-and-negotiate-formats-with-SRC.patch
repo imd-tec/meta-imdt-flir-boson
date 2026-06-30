@@ -268,10 +268,10 @@ index 650b0d542491..fbf887f803b1 100644
  					"%s: bus fmt is 10 bit !\n", __func__);
 -		} else {
 +		} else if ((code.code == MEDIA_BUS_FMT_SRGGB12_1X12) ||
-++				(code.code == MEDIA_BUS_FMT_SGRBG12_1X12) ||
-++				(code.code == MEDIA_BUS_FMT_SGBRG12_1X12) ||
-++				(code.code == MEDIA_BUS_FMT_SBGGR12_1X12) ||
-++				(code.code == MEDIA_BUS_FMT_Y12_1X12)) {
++				(code.code == MEDIA_BUS_FMT_SGRBG12_1X12) ||
++				(code.code == MEDIA_BUS_FMT_SGBRG12_1X12) ||
++				(code.code == MEDIA_BUS_FMT_SBGGR12_1X12) ||
++				(code.code == MEDIA_BUS_FMT_Y12_1X12)) {
  			mipi_csis_imx8mp_dewarp_ctl_data_type(state,
  					ISP_DEWARP_CTRL_DATA_TYPE_RAW12);
  			v4l2_dbg(1, debug, &state->sd,
