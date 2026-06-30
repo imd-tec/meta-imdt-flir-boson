@@ -12,6 +12,17 @@ Note: Currently tested on the following platforms:
 - flir-boson-sdk: The Python SDK from Videology, allows userspace Python scripts to communicate with the camera to 
   configure it e.g. color LUT etc.
 
+## What's new
+- v1.1.0:
+  - Fix issue where the AP1302 could not stream at a full 5MP whilst the Flir Boson camera was also streaming (i.MX8).
+  - Add support for the flir-boson C SDK
+  - Add support in camera-setup.sh to configure the AP1302 and Flir Boson output resolution.
+  - Add support in camera-setup.sh to configure the AP1302 and Flir Boson pixel output formats.
+  - Add more example pipelines:
+    - flir-boson-mp4.sh: Records a video stream to an MP4 file.
+    - flir-boson-simultaneous-raw-recording.sh: Records the raw video stream from both the AP1302 and Flir Boson simultaneously into separate .mkv files.
+    - flir-boson-y14-snapshot.sh: Takes a snapshot of the Flir Boson camera in Y14 format.
+
 ## How to use
 
 ### Build a Flir Boson compatible image
@@ -72,7 +83,62 @@ Setting pipeline to NULL ...
 Freeing pipeline ...
 Snapshot Taken! File written to: /tmp/boson.jpg
 ```
-Note: By default the file is written to /tmp/boson.jpg. You can specify a custom path if nessesary.
+Note: By default the file is written to /tmp/boson.jpg. You can specify a custom path if necessary.
+
+
+### Change camera resolution and pixel format
+
+To change the camera resolution, use the included `camera-setup.sh` script:
+```bash
+$ camera-setup.sh <boson/ap1302> <video-devnode> <resolution> <pixel-format>
+```
+
+For the Pico-EM, the video-devnodes are typically "/dev/video0" for the ap1302 and "/dev/video1" for the boson.
+
+The available resolutions and pixel formats for each camera are:
+
+Flir Boson Resolutions:
+
+| Resolution Name   | Description                                               |
+| ----------------- | --------------------------------------------------------- |
+| full              | Full resolution (640x512).                                |
+| full-telemetry    | Full resolution with additional telemetry line (640x514). |
+| subsampled        | Subsampled resolution (320x256).                          |
+
+Flir Boson Pixel Formats:
+
+| Format Name   | Description                | v4l2 Format Name   | gstreamer Format Name |
+| ------------- | -------------------------- | ------------------ | --------------------- |
+| YUYV          | Color 4:2:2 pixel format.  | UYVY8_1X16         | YUY2                  |
+| Y14           | Mono 1:1:4 pixel format.   | Y14_1X14           | GRAY14_LE             |
+| GREY          | Mono 1:1:1 pixel format.   | Y8_1X8             | GRAY8                 |
+
+AP1302 Resolutions:
+
+| Resolution Name   | Description                                               |
+| ----------------- | --------------------------------------------------------- |
+| 12mp              | 12MP resolution (4096x3072).                              |
+| 5mp               | 5MP resolution (2592x1944).                               |
+| 2k                | DCI 2k resolution (2048x1080).                            |
+| 1080p             | 1080p resolution (1920x1080).                             |
+| 1080-4:3          | HD resolution with 4:3 aspect ratio (1440x1080).          |
+| 720p              | 720p - 720p resolution (1280x720).                        |
+
+AP1302 Pixel Formats:
+
+| Format Name   | Description                | v4l2 Format Name   | gstreamer Format Name |
+| ------------- | -------------------------- | ------------------ | --------------------- |
+| YUYV          | Color 4:2:2 pixel format.  | UYVY8_1X16         | YUY2                  |
+| RGB3          | RGB 3:3:2 pixel format.    | RGB888_1X24        | RGB                   |
+| BGR3          | BGR 3:3:2 pixel format.    | BGR888_1X24        | BGR                   |
+
+### Get current camera configuration
+
+To programatically check what the current camera configuration is, you can use the "get-camera-setup.sh" script.
+
+```bash
+$ get-camera-setup.sh <video-devnode> <width/height/pixelformat/pixelformat-gst>
+```
 
 ### Change color scheme (look-up-table)
 
@@ -124,9 +190,12 @@ Single MIPI:
 
 | MIPI TYPE                       | DVO TYPE | Tested    |
 | ------------------------------- | -------- | --------- |
-| RAW8 (postAGC monochrome video) | MONO8    | ❌         |
+| RAW8 (postAGC monochrome video) | MONO8    | **✅**    |
 | UYVY (postAGC color video)      | COLOR    | **✅**    |
-| RAW14 (NUC output)              | MONO14   | ❌         |
+| RAW14 (NUC output)              | MONO14   | **✅**    |
+
+Note: RAW14 is not supported by gstreamer, if you are using the Flir Boson inside a gstreamer pipeline, 
+please use either the RAW8 or UYVY output modes instead.
 
 Dual MIPI:
 

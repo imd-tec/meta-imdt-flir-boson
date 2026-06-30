@@ -5,8 +5,8 @@ Wants=systemd-udevd.service
 
 [Service]
 Type=oneshot
-ExecStart=/usr/bin/camera-setup.sh ap1302 /dev/video0 5mp
-ExecStart=/usr/bin/camera-setup.sh boson /dev/video1 full
+ExecStart=/usr/bin/camera-setup.sh ap1302 /dev/video0 5mp YUYV
+ExecStart=/usr/bin/camera-setup.sh boson /dev/video1 full YUYV
 RemainAfterExit=yes
 
 [Install]

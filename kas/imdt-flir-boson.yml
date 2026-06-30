@@ -21,3 +21,5 @@ repos:
       path: .
       layers: {}
   meta-imdt-flir-boson:
+
+distro: imdt-imx-xwayland
