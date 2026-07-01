@@ -21,7 +21,7 @@ if [ $# -ge 1 ]; then
 fi
 
 v4l2-ctl -d /dev/video1 \
-    --set-fmt-video=width="${WIDTH}",height="${HEIGHT}",pixelformat=Y14 \
+    --set-fmt-video=width="${WIDTH}",height="${HEIGHT}",pixelformat="Y14 "\
     --stream-mmap \
     --stream-count=1 \
     --stream-to=/tmp/snapshot.raw
