@@ -144,7 +144,7 @@ $ get-camera-setup.sh <video-devnode> <width/height/pixelformat/pixelformat-gst>
 
 The Boson SDK comes with a Python tool to change the colour scheme. To set it, run the following command:
 ```bash
-$ flir-color-lut -p <i2c-port> <lut-id>
+$ flir-color-lut -p <i2c-port> set <lut-id>
 ```
 
 Note: the i2c port for the Pico-EM is "3".
