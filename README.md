@@ -13,6 +13,9 @@ Note: Currently tested on the following platforms:
   configure it e.g. color LUT etc.
 
 ## What's new
+- v1.2.0:
+  - Configure the Flir Boson with a device tree overlay instead of building it into the base device tree. 
+    Check the "Setup Flir Boson Device Tree Overlay" section for more information.
 - v1.1.0:
   - Fix issue where the AP1302 could not stream at a full 5MP whilst the Flir Boson camera was also streaming (i.MX8).
   - Add support for the flir-boson C SDK
@@ -62,7 +65,9 @@ this will automatically add the flir-boson components to imdt-image-core/multime
 
 4. Boot the device with the AP1302 (with selected sensor e.g. AR0522, AR1335) on CSI0, and the Boson camera connected on CSI1.
 
-5. Try a capture from the Flir-Boson by executing the following on the device:
+5. Configure the Flir Boson Device Tree Overlay. Check the "Setup Flir Boson Device Tree Overlay" section for more information.
+
+6. Try a capture from the Flir-Boson by executing the following on the device:
 ```bash
 $ flir-boson-snapshot.sh
 ```
@@ -85,6 +90,39 @@ Snapshot Taken! File written to: /tmp/boson.jpg
 ```
 Note: By default the file is written to /tmp/boson.jpg. You can specify a custom path if necessary.
 
+### Setup Flir Boson Device Tree Overlay
+
+1. Connect a serial terminal to the Pico-EM and power the device on.
+
+2. As the device is booting, interrupt the U-Boot boot count down to get access to the U-Boot shell by pressing any key on the keyboard.
+
+3. Run one of the following commands in the U-Boot shell depending on your system configuration
+For systems with Flir Boson + AP1302/AR1335:
+```bash
+u-boot=> setenv apply_overlays "imx8mp-imdt-pico-flir-boson.dtbo"
+```
+
+For systems with Flir Boson + AP1302/AR052(1/2)::
+```bash
+u-boot=> setenv apply_overlays "imx8mp-imdt-pico-flir-boson.dtbo imx8mp-imdt-pico-ar0521.dtbo"
+```
+
+For systems with just Flir Boson:
+```bash
+u-boot=> setenv apply_overlays "imx8mp-imdt-pico-flir-boson-standalone.dtbo"
+```
+
+Then run the following commands to save the variable changes and reboot:
+```bash
+u-boot=> saveenv
+u-boot=> reset
+```
+
+Note: The AP1302 should always be on CSI0, the Flir Boson should always be on CSI1.
+If your system has a custom configuration then manual device tree changes are required.
+
+To set this configuration as default for your image, it is recommended to either patch U-Boot to set the
+CONFIG_EXTRA_ENV_SETTINGS macro accordingly.
 
 ### Change camera resolution and pixel format
 
@@ -197,7 +235,7 @@ Single MIPI:
 Note: RAW14 is not supported by gstreamer, if you are using the Flir Boson inside a gstreamer pipeline, 
 please use either the RAW8 or UYVY output modes instead.
 
-Dual MIPI:
+Dual MIPI (not compatible with Pico-EM):
 
 | MIPI TYPE [VC0 / VC1] ( Note: RAW8 is postAGC )  | DVO TYPE    | Tested    |
 | ------------------------------------------------ | ----------- | --------- |
@@ -352,8 +390,8 @@ If the media-ctl command fails with:
 Failed to enumerate /dev/media0 (-2)
 ```
 
-Check that **both** cameras are attached and check if the ap1302 driver has loaded correctly,
-run the following command on the device:
+Check that the correct device tree overlays have been loaded, and the respective cameras are attached.
+if you are using the AP1302, run the following command on the device:
 ```bash
 $ dmesg | grep "ap1302"
 ```
@@ -378,8 +416,6 @@ programatically on boot. We are still working for a more robust fix here.
 
 - There is a startup issue with the AP1302 driver when the Boson driver is introduced on the same I2C node.
   Performing I2C reads/writes can be unreliable on startup, if one fails then the driver must manually be reloaded.
-
-- In order to bring the media pipeline up, there must be a compatible camera sensor (either ar1335 or ar0521/2) attached to the AP1302 on CSI0. If there is no camera attached, then streaming/configuration of the Boson is not possible.
 
 - Currently you cannot stream from the AP1302 at 5MP over 30FPS. This appears to be an issue in the AP1302 driver, which will be
 investigated in a later release.

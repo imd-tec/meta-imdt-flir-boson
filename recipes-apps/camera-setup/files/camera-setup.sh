@@ -47,7 +47,7 @@ detect_ap1302_wrong_overlay() {
 }
 
 detect_ap1302_startup_failure() {
-    if dmesg | grep -qE "ap1302.*(write|read) failed: -6"; then
+    if dmesg | grep -qE "ap1302.*(write|read) failed: -*"; then
         echo "AP1302 firmware load failed, reloading modules..."
 
         modprobe -r ap1302

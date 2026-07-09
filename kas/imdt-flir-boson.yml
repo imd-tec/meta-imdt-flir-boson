@@ -23,3 +23,7 @@ repos:
   meta-imdt-flir-boson:
 
 distro: imdt-imx-xwayland
+
+local_conf_header:
+  camera-overlays: |
+    CAMERA_OVERLAYS:append = " freescale/imx8mp-imdt-pico-flir-boson.dtbo freescale/imx8mp-imdt-pico-flir-boson-standalone.dtbo"
