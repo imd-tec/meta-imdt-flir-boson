@@ -65,6 +65,24 @@ detect_ap1302_startup_failure() {
     fi
 }
 
+wait_for_camera() {
+    DEV="$1"
+    TIMEOUT="${2:-10}"
+    ELAPSED=0
+    INTERVAL=0.2
+
+    while [ "$ELAPSED" -lt "$TIMEOUT" ]; do
+        if [ -e "$DEV" ] && v4l2-ctl --device="$DEV" --info >/dev/null 2>&1; then
+            return 0
+        fi
+        sleep "$INTERVAL"
+        ELAPSED=$((ELAPSED + 1))
+    done
+
+    echo "camera-setup: timed out waiting for $DEV" >&2
+    return 1
+}
+
 wait_for_media_devnode() {
     echo "Waiting for /dev/media0 to be created..."
     TIME_WAITED=0
@@ -301,6 +319,11 @@ fi
 
 detect_ap1302_wrong_overlay
 wait_for_media_devnode
+
+if ! wait_for_camera "${2}"; then
+    echo "Error: could not access camera ${VIDEO_DEVICE}"
+    exit 1
+fi
 
 SETUP_DEVICE=${1}
 

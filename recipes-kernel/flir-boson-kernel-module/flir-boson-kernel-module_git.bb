@@ -6,11 +6,14 @@ LIC_FILES_CHKSUM = "file://License.txt;md5=bcbce5abc4a0050677b9bee08b63ab43"
 
 inherit module
 
-SRC_URI = "git://github.com/VideologyInc/flir_boson_kernel_module.git;protocol=https;branch=master"
+SRC_URI = "git://github.com/VideologyInc/flir_boson_kernel_module.git;protocol=https;branch=master \
+           file://0001-Power-on-the-Boson-Camera-inside-s_stream.patch \
+           file://0002-Reorder-V4L2-subdev-initialisation.patch \
+           file://0003-Set-reset-GPIO-to-floating.patch \
+           "
 SRCREV = "5e433a23c2f787551648b4d88325b36f0a88c558"
 
 FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
-SRC_URI += "file://0001-Power-on-the-Boson-Camera-inside-s_stream.patch"
 
 PV = "1.0+git${SRCPV}"
 

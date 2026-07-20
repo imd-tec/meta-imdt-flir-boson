@@ -1,0 +1,98 @@
+From 85867168a5162044a95f77420a1a206b3fc0ebcf Mon Sep 17 00:00:00 2001
+From: Russell Bateman <russell.bateman@imd-tec.com>
+Date: Thu, 16 Jul 2026 17:07:36 +0100
+Subject: [PATCH] Perform the initialisation of the V4l2 subdevice after
+ performing the hardware initialisation.
+
+---
+ flir_boson_v4l2/flir-boson-core.c | 63 ++++++++++++++++++-------------
+ 1 file changed, 37 insertions(+), 26 deletions(-)
+
+diff --git a/flir_boson_v4l2/flir-boson-core.c b/flir_boson_v4l2/flir-boson-core.c
+index bc3363d..df39b5e 100644
+--- a/flir_boson_v4l2/flir-boson-core.c
++++ b/flir_boson_v4l2/flir-boson-core.c
+@@ -654,6 +654,40 @@ static const struct media_entity_operations flir_boson_media_ops = {
+ 	.link_setup = flir_boson_link_setup,
+ };
+ 
++static int flir_boson_subdev_init(struct i2c_client *client, struct flir_boson_dev *sensor)
++{
++    int ret;
++    struct device *dev = sensor->dev;
++
++    /* Initialize V4L2 subdev */
++	v4l2_i2c_subdev_init(&sensor->sd, client, &flir_boson_subdev_ops);
++	sensor->sd.flags |= V4L2_SUBDEV_FL_HAS_EVENTS | V4L2_SUBDEV_FL_HAS_DEVNODE;
++	sensor->sd.entity.function = MEDIA_ENT_F_CAM_SENSOR;
++    sensor->sd.entity.ops      = &flir_boson_media_ops;
++	strscpy(sensor->sd.name, "flir_boson", sizeof(sensor->sd.name));
++	dev_dbg(dev, "PROBE: V4L2 subdev initialized");
++   
++	/* Initialize media pad */
++	sensor->pad.flags = MEDIA_PAD_FL_SOURCE;
++	ret = media_entity_pads_init(&sensor->sd.entity, 1, &sensor->pad);
++	if (ret) {
++		dev_err(dev, "Could not init media entity\n");
++		return ret;
++	}
++	dev_dbg(dev, "PROBE: Media pad initialized");
++   
++	/* Register V4L2 subdev */
++	dev_dbg(dev, "PROBE: Registering V4L2 async subdev");
++	ret = v4l2_async_register_subdev_sensor(&sensor->sd);
++	if (ret) {
++		dev_err(dev, "Could not register v4l2 device: %d\n", ret);
++		return ret;
++	}
++	dev_dbg(dev, "PROBE: V4L2 subdev registered successfully");
++
++	return R_SUCCESS;
++}
++
+ /* I2C Driver Functions */
+ #if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 3, 0)
+ static int flir_boson_probe(struct i2c_client *client)
+@@ -732,32 +766,6 @@ static int flir_boson_probe(struct i2c_client *client, const struct i2c_device_i
+         return ret;
+     }
+ 
+-	/* Initialize V4L2 subdev */
+-	v4l2_i2c_subdev_init(&sensor->sd, client, &flir_boson_subdev_ops);
+-	sensor->sd.flags |= V4L2_SUBDEV_FL_HAS_EVENTS | V4L2_SUBDEV_FL_HAS_DEVNODE;
+-	sensor->sd.entity.function = MEDIA_ENT_F_CAM_SENSOR;
+-    sensor->sd.entity.ops      = &flir_boson_media_ops;
+-    strscpy(sensor->sd.name, "flir_boson", sizeof(sensor->sd.name));
+-	dev_dbg(dev, "PROBE: V4L2 subdev initialized");
+-
+-	/* Initialize media pad */
+-	sensor->pad.flags = MEDIA_PAD_FL_SOURCE;
+-	ret = media_entity_pads_init(&sensor->sd.entity, 1, &sensor->pad);
+-	if (ret) {
+-		dev_err(dev, "Could not init media entity\n");
+-		goto cleanup_mutex;
+-	}
+-	dev_dbg(dev, "PROBE: Media pad initialized");
+-
+-	/* Register V4L2 subdev */
+-	dev_dbg(dev, "PROBE: Registering V4L2 async subdev");
+-	ret = v4l2_async_register_subdev_sensor(&sensor->sd);
+-	if (ret) {
+-		dev_err(dev, "Could not register v4l2 device: %d\n", ret);
+-		goto cleanup_entity;
+-	}
+-	dev_dbg(dev, "PROBE: V4L2 subdev registered successfully");
+-
+ 	if (sensor->reset_gpio) {
+ 		gpiod_set_value_cansleep(sensor->reset_gpio, 1);
+ 		msleep(4);
+@@ -777,6 +785,9 @@ static int flir_boson_probe(struct i2c_client *client, const struct i2c_device_i
+         dev_warn(dev, "Could not set MIPI state to OFF");
+ 	sensor->mipi_state = FLR_DVO_MIPI_STATE_OFF;
+ 
++	if (flir_boson_subdev_init(client, sensor) != R_SUCCESS)
++		goto cleanup_entity;
++
+ 	dev_info(dev, "FLIR Boson+ MIPI camera driver loaded\n");
+ 	dev_dbg(dev, "PROBE: Complete - device ready for operation");
+ 	return 0;

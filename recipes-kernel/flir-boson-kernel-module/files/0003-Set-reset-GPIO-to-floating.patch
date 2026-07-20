@@ -1,0 +1,28 @@
+From 59d23f976ec29f555c69c345345bb88abac2ede3 Mon Sep 17 00:00:00 2001
+From: Russell Bateman <russell.bateman@imd-tec.com>
+Date: Thu, 16 Jul 2026 17:22:31 +0100
+Subject: [PATCH] Set the reset GPIO to floating after asserting it low, as per
+ the datasheet - Boson Engineering Datasheet Rev 350.pdf page 80.
+
+---
+ flir_boson_v4l2/flir-boson-core.c | 7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
+
+diff --git a/flir_boson_v4l2/flir-boson-core.c b/flir_boson_v4l2/flir-boson-core.c
+index df39b5e..9334603 100644
+--- a/flir_boson_v4l2/flir-boson-core.c
++++ b/flir_boson_v4l2/flir-boson-core.c
+@@ -769,7 +769,12 @@ static int flir_boson_probe(struct i2c_client *client, const struct i2c_device_i
+ 	if (sensor->reset_gpio) {
+ 		gpiod_set_value_cansleep(sensor->reset_gpio, 1);
+ 		msleep(4);
+-		gpiod_set_value_cansleep(sensor->reset_gpio, 0);
++
++		/* Set as floating as per the datasheet: "It is not strictly necessary to connect the reset pin to power on the Boson 
++		 * camera, but it must be floating when the camera is in the "Booting" state, not tied
++		 * to 1.8V or ground."
++		 */
++		gpiod_direction_input(sensor->reset_gpio);
+ 
+ 	    /* Wait for camera boot (2.5 seconds as per spec) */
+ 		msleep(2700);
