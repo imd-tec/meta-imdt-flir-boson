@@ -16,6 +16,7 @@ Note: Currently tested on the following platforms:
 - v1.2.0:
   - Configure the Flir Boson with a device tree overlay instead of building it into the base device tree. 
     Check the "Setup Flir Boson Device Tree Overlay" section for more information.
+  - Add NV12 pixel format and FPS parameter for the AP1302 in camera-setup.sh, default to 30 FPS.
 - v1.1.0:
   - Fix issue where the AP1302 could not stream at a full 5MP whilst the Flir Boson camera was also streaming (i.MX8).
   - Add support for the flir-boson C SDK
@@ -128,10 +129,13 @@ CONFIG_EXTRA_ENV_SETTINGS macro accordingly.
 
 To change the camera resolution, use the included `camera-setup.sh` script:
 ```bash
-$ camera-setup.sh <boson/ap1302> <video-devnode> <resolution> <pixel-format>
+$ camera-setup.sh <boson/ap1302> <video-devnode> <resolution> <pixel-format> (FPS)
 ```
 
 For the Pico-EM, the video-devnodes are typically "/dev/video0" for the ap1302 and "/dev/video1" for the boson.
+
+The FPS option only applies to the AP1302 and is an optional parameter. If no FPS value is provided, a default
+value of "30" is used.
 
 The available resolutions and pixel formats for each camera are:
 

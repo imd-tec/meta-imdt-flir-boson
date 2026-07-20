@@ -9,6 +9,8 @@ v4l2_format_to_gst() {
         "Y14 ") echo "GRAY14_LE" ;; # Not supported by GStreamer
         "RGB3") echo "RGB" ;;
         "BGR3") echo "BGR" ;;
+        "NV12") echo "NV12" ;;
+        "NM12") echo "NV12" ;;
     esac
 }
 

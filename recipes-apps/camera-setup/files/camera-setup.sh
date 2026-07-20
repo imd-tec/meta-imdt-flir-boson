@@ -3,7 +3,7 @@
 # Sets correct format through the media pipeline before capture
 
 show_help() {
-    echo "Usage: $(basename "$0") <video-device> <video-dev-node> <video-mode> <video-format>"
+    echo "Usage: $(basename "$0") <video-device> <video-dev-node> <video-mode> <video-format> (fps)"
     echo "-----------------------------------------------------------------------"
     echo "Video Devices:"
     echo "boson - Flir Boson thermal imaging camera."
@@ -31,7 +31,9 @@ show_help() {
     echo "YUYV - Color 4:2:2 pixel format."
     echo "RGB3 - RGB 3:3:2 pixel format."
     echo "BGR3 - BGR 3:3:2 pixel format."
+    echo "NV12 - NV12 compressed pixel format."
     echo "-----------------------------------------------------------------------"
+    echo "Note: The FPS parameter only affects the AP1302 camera. If none is specified, the default is 30 FPS."
     exit 1
 }
 
@@ -78,12 +80,26 @@ wait_for_media_devnode() {
     done
 }
 
+dtbo_is_loaded() {
+    if fw_printenv apply_overlays | grep "${1}" > /dev/null; then
+        return 0
+    else
+        return 1
+    fi
+}
+
 media_ctl_set() {
     MEDIA_DEVICE=${1}
     MEDIA_PAD=${2}
     MEDIA_FMT=${3}
     MEDIA_RES=${4}
-    (set -x; media-ctl -V "\"${MEDIA_DEVICE}\":${MEDIA_PAD} [fmt:${MEDIA_FMT}/${MEDIA_RES}]")
+    MEDIA_FPS=${5}
+
+    if [ -n "${MEDIA_FPS}" ]; then
+        (set -x; media-ctl -V "\"${MEDIA_DEVICE}\":${MEDIA_PAD} [fmt:${MEDIA_FMT}/${MEDIA_RES}@1/${MEDIA_FPS}]")
+    else
+        (set -x; media-ctl -V "\"${MEDIA_DEVICE}\":${MEDIA_PAD} [fmt:${MEDIA_FMT}/${MEDIA_RES}]")
+    fi
 }
 
 v4l2_format_to_media_ctrl() {
@@ -111,6 +127,8 @@ v4l2_format_to_media_ctrl() {
             "RGB3") echo "RGB888_1X24"
             ;;
             "BGR3") echo "BGR888_1X24"
+            ;;
+            "NV12") echo "YUYV8_1X16"
             ;;
             *) echo ""
             ;;
@@ -212,8 +230,14 @@ get_ap1302_resolution_from_mode() {
 setup_ap1302() {
     VIDEO_DEVICE=${1}
     VIDEO_MODE=${2}
-    
-    echo "Setting up AP1302 on ${VIDEO_DEVICE} with mode ${VIDEO_MODE}"
+    VIDEO_FPS=${4}
+
+    if [ -z "${VIDEO_FPS}" ]; then
+        echo "AP1302 FPS not specified, defaulting to 30"
+        VIDEO_FPS=30
+    fi
+
+    echo "Setting up AP1302 on ${VIDEO_DEVICE} with mode ${VIDEO_MODE} at ${VIDEO_FPS}fps"
 
     # Media-ctl nodes
     AP1302_SENSOR="ap1302.3-003c"
@@ -222,6 +246,7 @@ setup_ap1302() {
 
     # Pads
     AP1302_SENSOR_SOURCE=0
+    AP1302_SENSOR_SINK=1
     AP1302_CSI_SOURCE=4
     CROSSBAR_AP1302_SINK=0
     CROSSBAR_AP1302_SOURCE=3
@@ -248,11 +273,20 @@ setup_ap1302() {
     fi
 
     # Configure pipeline formats
-    media_ctl_set ${AP1302_SENSOR} ${AP1302_SENSOR_SOURCE} "${AP1302_MEDIA_CTRL_FORMAT}" "${AP1302_RES}"
+    media_ctl_set ${AP1302_SENSOR} ${AP1302_SENSOR_SOURCE} "${AP1302_MEDIA_CTRL_FORMAT}" "${AP1302_RES}" "${VIDEO_FPS}"
+    media_ctl_set ${AP1302_SENSOR} ${AP1302_SENSOR_SINK} "SGRBG10_1X10" "${AP1302_RES}"
     media_ctl_set ${AP1302_CSI} ${AP1302_CSI_SOURCE} "${AP1302_MEDIA_CTRL_FORMAT}" "${AP1302_RES}"
     media_ctl_set "crossbar" ${CROSSBAR_AP1302_SINK} "${AP1302_MEDIA_CTRL_FORMAT}" "${AP1302_RES}"
     media_ctl_set "crossbar" ${CROSSBAR_AP1302_SOURCE} "${AP1302_MEDIA_CTRL_FORMAT}" "${AP1302_RES}"
     media_ctl_set ${AP1302_ISI} ${AP1302_ISI_SINK} "${AP1302_MEDIA_CTRL_FORMAT}" "${AP1302_RES}"
+
+    if ! dtbo_is_loaded "imx8mp-imdt-pico-flir-boson.dtbo"; then
+        # Configure the unused ISI route to match the AP1302s route.
+        # This prevents the error in V4L2:
+        # error with STREAMON 32 (Broken pipe):
+        # "crossbar":4 -> "mxc_isi.1":0 FAILED: src=1280x720 ... sink=640x512 
+        media_ctl_set "mxc_isi.1" 0 "${AP1302_MEDIA_CTRL_FORMAT}" "${AP1302_RES}"
+    fi
 
     # Set capture format on video node
     v4l2-ctl -d "${VIDEO_DEVICE}" --set-fmt-video=width="${AP1302_WIDTH}",height="${AP1302_HEIGHT}",pixelformat="${AP1302_V4L2_FORMAT}"
@@ -271,9 +305,20 @@ wait_for_media_devnode
 SETUP_DEVICE=${1}
 
 case "${SETUP_DEVICE}" in
-    "ap1302") setup_ap1302 "${2}" "${3}" "${4}"
+    "ap1302")
+        if dtbo_is_loaded "imx8mp-imdt-pico-flir-boson-standalone.dtbo"; then
+            echo "Note: imx8mp-imdt-pico-flir-boson-standalone.dtbo is loaded. Skipping AP1302 setup."
+            exit 0
+        fi
+        setup_ap1302 "${2}" "${3}" "${4}" "${5}"
     ;;
-    "boson") setup_flir_boson "${2}" "${3}" "${4}"
+    "boson") 
+        if ! dtbo_is_loaded "imx8mp-imdt-pico-flir-boson*.dtbo"; then
+            echo "Note: Neither mx8mp-imdt-pico-flir-boson.dtbo nor imx8mp-imdt-pico-flir-boson-standalone.dtbo is loaded."
+            echo "Skipping Boson setup."
+            exit 0
+        fi
+        setup_flir_boson "${2}" "${3}" "${4}"
     ;;
     *) echo "Error: Unknown device ${SETUP_DEVICE}" && show_help
     ;;
