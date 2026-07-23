@@ -2,6 +2,7 @@ header:
   version: 15
   includes:
     - kas/imdt-flir-boson.yml
+    - kas/imdt-pico-kas-standalone.yml
 
 target:
   - imdt-image-core

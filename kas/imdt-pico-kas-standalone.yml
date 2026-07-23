@@ -1,0 +1,7 @@
+header:
+  version: 15
+repos:
+  meta-imdt-imx:
+      url: https://github.com/imd-tec/meta-imdt-imx.git
+      branch: scarthgap
+      path: meta-imdt-imx
