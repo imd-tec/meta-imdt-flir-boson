@@ -16,7 +16,11 @@ Note: Currently tested on the following platforms:
 - v1.2.0:
   - Configure the Flir Boson with a device tree overlay instead of building it into the base device tree. 
     Check the "Setup Flir Boson Device Tree Overlay" section for more information.
+  - Fix issue where the Boson would be configured by camera-setup before the hardware had been initialised.
   - Add NV12 pixel format and FPS parameter for the AP1302 in camera-setup.sh, default to 30 FPS.
+  - Add the ability to build images from first principles from within this meta-layer.
+    Check the "Build from first principles" section for more information.
+  - Add github CI actions.
 - v1.1.0:
   - Fix issue where the AP1302 could not stream at a full 5MP whilst the Flir Boson camera was also streaming (i.MX8).
   - Add support for the flir-boson C SDK
@@ -31,6 +35,41 @@ Note: Currently tested on the following platforms:
 
 ### Build a Flir Boson compatible image
 
+#### Build from first principles
+
+1. Create a directory for the Yocto build:
+```bash
+$ mkdir imdt-bsp
+```
+
+2. Clone this meta-layer into the directory:
+```bash
+$ cd imdt-bsp
+$ git clone git@github.com:imd-tec/meta-imdt-flir-boson.git
+```
+
+3. Install Kas
+```bash
+$ python3 -m venv venv
+$ source venv/bin/activate
+$ pip install kas==4.7
+```
+
+On following sessions, source the venv to get access to the kas binary
+```bash
+$ source venv/bin/activate
+```
+
+4. Build the image core or multimedia image:
+```bash
+$ kas-container build meta-imdt-flir-boson/kas/imdt-flir-boson-core.yml
+```
+or
+```bash
+$ kas-container build meta-imdt-flir-boson/kas/imdt-flir-boson-multimedia.yml
+```
+
+#### Build from an existing IMDT BSP build
 If you are starting from scratch, please follow the "Building the Yocto Image" section in the 
 Getting Started Guide for your IMDT platform:
 
