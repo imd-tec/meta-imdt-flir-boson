@@ -99,7 +99,7 @@ wait_for_media_devnode() {
 }
 
 dtbo_is_loaded() {
-    if fw_printenv apply_overlays | grep "${1}" > /dev/null; then
+    if fw_printenv apply_overlays | grep -E "${1}" > /dev/null; then
         return 0
     else
         return 1
@@ -213,6 +213,15 @@ setup_flir_boson() {
     media_ctl_set "crossbar" ${CROSSBAR_BOSON_SINK} "${BOSON_MEDIA_CTRL_FORMAT}" "${BOSON_RES}"
     media_ctl_set "crossbar" ${CROSSBAR_BOSON_SOURCE} "${BOSON_MEDIA_CTRL_FORMAT}" "${BOSON_RES}"
     media_ctl_set ${BOSON_ISI} ${BOSON_ISI_SINK} "${BOSON_MEDIA_CTRL_FORMAT}" "${BOSON_RES}"
+
+    if dtbo_is_loaded "imx8mp-imdt-pico-flir-boson-standalone.dtbo"; then
+        # Configure the unused ISI route to match the Flir Bosons route.
+        # This prevents the error in V4L2:
+        # error with STREAMON 32 (Broken pipe):
+        # "mxc-mipi-csi2.1":4 -> "crossbar":1 FAILED: src=640x512 code=0x200f field=1 
+        # sink=1920x1080 code=0x200f field=1
+        media_ctl_set "mxc_isi.0" 0 "${BOSON_MEDIA_CTRL_FORMAT}" "${BOSON_RES}"
+    fi
 
     if [ "${BOSON_V4L2_FORMAT}" == "Y14" ]; then
         # Append space to Y14 format to make it into the fourcc format
@@ -336,7 +345,7 @@ case "${SETUP_DEVICE}" in
         setup_ap1302 "${2}" "${3}" "${4}" "${5}"
     ;;
     "boson") 
-        if ! dtbo_is_loaded "imx8mp-imdt-pico-flir-boson*.dtbo"; then
+        if ! dtbo_is_loaded "imx8mp-imdt-pico-flir-boson.*\.dtbo"; then
             echo "Note: Neither mx8mp-imdt-pico-flir-boson.dtbo nor imx8mp-imdt-pico-flir-boson-standalone.dtbo is loaded."
             echo "Skipping Boson setup."
             exit 0
