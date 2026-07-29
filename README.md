@@ -457,8 +457,10 @@ programatically on boot. We are still working for a more robust fix here.
 
 ## Known Issues
 
-- There is a startup issue with the AP1302 driver when the Boson driver is introduced on the same I2C node.
-  Performing I2C reads/writes can be unreliable on startup, if one fails then the driver must manually be reloaded.
+- On some HW configurations, there is an intermittent startup issue with the AP1302 driver when the 
+  Boson driver is introduced on the same I2C node. Performing I2C reads/writes can be unreliable on startup, 
+  if one fails then the driver must manually be reloaded.
 
-- Currently you cannot stream from the AP1302 at 5MP over 30FPS. This appears to be an issue in the AP1302 driver, which will be
-investigated in a later release.
+- Currently you cannot stream from the AP1302 at 5MP over 30FPS as the AR0521/2 FW is configured for 2-lane MIPI. 
+  To stream the AR0521 at 5MP@60FPS, you would need to load the 4-lane MIPI AR0521/2 FW to the AP1302.
+  However, we currently don't have the HW to verify this configuration.
